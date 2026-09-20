@@ -111,7 +111,7 @@ export async function seedDatabase(): Promise<void> {
       updatedAt: '2025-04-01T00:00:00Z'
     }
   ];
-  DepartmentModel.seed(departments);
+  await DepartmentModel.seed(departments);
 
   // 2. Seed Users
   const users: IUser[] = [
@@ -176,14 +176,14 @@ export async function seedDatabase(): Promise<void> {
       updatedAt: '2025-04-01T00:00:00Z'
     }
   ];
-  UserModel.seed(users);
+  await UserModel.seed(users);
 
   // 3. Seed Thresholds
   const thresholds: IThreshold = {
     _id: 'thresh_global',
     ...DEFAULT_THRESHOLDS
   };
-  ThresholdModel.seed([thresholds]);
+  await ThresholdModel.seed([thresholds]);
 
   // 4. Seed Budgets (Demonstrating all 5 required scenarios)
   // Current fiscal year: 2025-26 (Apr 1, 2025 to Mar 31, 2026)
@@ -297,7 +297,7 @@ export async function seedDatabase(): Promise<void> {
       updatedAt: '2025-08-10T00:00:00Z'
     }
   ];
-  BudgetModel.seed(budgets);
+  await BudgetModel.seed(budgets);
 
   // 5. Seed Expenditures
   const expenditures: IExpenditure[] = [
@@ -489,7 +489,7 @@ export async function seedDatabase(): Promise<void> {
       updatedAt: '2025-07-28T00:00:00Z'
     }
   ];
-  ExpenditureModel.seed(expenditures);
+  await ExpenditureModel.seed(expenditures);
 
   // 6. Seed Realistic Alerts Generated from the Scenarios
   const alerts: IAlert[] = [
@@ -548,7 +548,7 @@ export async function seedDatabase(): Promise<void> {
       reviewedAt: '2025-07-29T09:00:00Z'
     }
   ];
-  AlertModel.seed(alerts);
+  await AlertModel.seed(alerts);
 
   // 7. Seed Audit Logs
   const auditLogs = [
@@ -618,7 +618,7 @@ export async function seedDatabase(): Promise<void> {
       ipAddress: '10.0.4.12'
     }
   ];
-  AuditLogModel.seed(auditLogs as any);
+  await AuditLogModel.seed(auditLogs as any);
 
   console.log('[Database] GovBudget AI financial monitoring ledger initialized with statutory schemes.');
 }

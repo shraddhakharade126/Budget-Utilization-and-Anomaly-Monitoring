@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 import { User, Department } from '../types';
 import { Shield, Lock, Mail, ArrowRight, UserCheck, AlertCircle, UserPlus, Building2, UserCircle2 } from 'lucide-react';
+import { ThemeSwitcher } from './ThemeSwitcher';
 
 interface LoginComponentProps {
   onLoginSuccess: (user: User) => void;
@@ -118,7 +119,12 @@ export const LoginComponent: React.FC<LoginComponentProps> = ({ onLoginSuccess }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 selection:bg-blue-600 selection:text-white">
+    <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 selection:bg-blue-600 selection:text-white relative">
+      {/* Top Accessibility Theme Bar */}
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeSwitcher variant="compact" />
+      </div>
+
       {/* Container */}
       <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xl relative">
         {/* Header */}

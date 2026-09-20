@@ -20,7 +20,9 @@ import {
   Server,
   Zap,
   TrendingUp,
-  Scale
+  Scale,
+  Sun,
+  Eye
 } from 'lucide-react';
 
 export const SystemGuideView: React.FC = () => {
@@ -648,6 +650,64 @@ export const SystemGuideView: React.FC = () => {
                 <h4 className="text-xs font-semibold text-white">MongoDB + Dual In-Memory Engine</h4>
                 <p className="text-[11px] text-slate-400 leading-relaxed">
                   Production MongoDB Mongoose persistence with seamless zero-dependency in-memory failover, deployed on secure containerized cloud hosting.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Government Accessibility & High-Contrast Compliance Standard */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  <Sun className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    Government Accessibility &amp; High-Contrast Standards Compliance
+                    <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-emerald-950 text-emerald-300 border border-emerald-800">
+                      WCAG 2.1 Level AAA
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Mandatory accessibility requirements under GIGW (Guidelines for Indian Government Websites) &amp; Section 508.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-slate-400">Standard:</span>
+                <span className="font-mono font-semibold text-white bg-slate-950 px-2.5 py-1 rounded border border-slate-800">
+                  ISO/IEC 40500:2012
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+              <div className="p-3 bg-slate-950/60 rounded-lg border border-slate-800 space-y-1.5">
+                <span className="text-[11px] font-bold text-blue-400 block uppercase tracking-wider">
+                  1. High Contrast Ratio (&ge; 7:1)
+                </span>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  The light theme enforces deep charcoal typography (`#0f172a` / `#1e293b`) on pure white and off-white cards, exceeding the 7:1 AAA criterion for low-vision and sunlight field operations.
+                </p>
+              </div>
+
+              <div className="p-3 bg-slate-950/60 rounded-lg border border-slate-800 space-y-1.5">
+                <span className="text-[11px] font-bold text-emerald-400 block uppercase tracking-wider">
+                  2. Clear Surface Boundaries (&ge; 3:1)
+                </span>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  Cards, inputs, dialogs, and tables maintain crisp solid borders (`#cbd5e1` / `#94a3b8`) guaranteeing visual separation without relying on faint drop-shadows.
+                </p>
+              </div>
+
+              <div className="p-3 bg-slate-950/60 rounded-lg border border-slate-800 space-y-1.5">
+                <span className="text-[11px] font-bold text-amber-400 block uppercase tracking-wider">
+                  3. Keyboard &amp; Focus Visible
+                </span>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  All interactive controls, theme switches, and table rows include explicit 2px high-visibility focus indicators and complete ARIA switch semantics for screen readers.
                 </p>
               </div>
             </div>

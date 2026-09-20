@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User } from '../types';
 import { Shield, RefreshCw, LogOut, Bell, CheckCircle2, ChevronDown, UserCircle2 } from 'lucide-react';
+import { ThemeSwitcher } from './ThemeSwitcher';
 
 interface NavbarProps {
   currentUser: User | null;
@@ -91,6 +92,9 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Action Controls & Role Context */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Accessibility Theme Switcher */}
+          <ThemeSwitcher variant="compact" />
+
           {/* Real-Time Sync Button */}
           <button
             onClick={handleSync}
@@ -185,6 +189,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <p className="font-medium text-white">Sunil Verma</p>
                     <p className="text-[10px] text-amber-400">head@govbudget.nic.in &bull; Health Dept Head</p>
                   </button>
+                </div>
+
+                {/* Display Theme & Accessibility Setting */}
+                <div className="pt-2 border-t border-slate-800 space-y-1.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Accessibility & Display
+                  </p>
+                  <ThemeSwitcher variant="full" />
                 </div>
 
                 {/* Sign Out */}

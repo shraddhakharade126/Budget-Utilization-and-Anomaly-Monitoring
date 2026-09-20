@@ -5,6 +5,7 @@ dotenv.config();
 export interface DBConfig {
   isAtlasConnected: boolean;
   dbType: 'MongoDB Atlas' | 'Embedded High-Performance Document Store';
+  clusterUri?: string;
 }
 
 export const dbStatus: DBConfig = {
@@ -13,16 +14,21 @@ export const dbStatus: DBConfig = {
 };
 
 export async function connectDB(): Promise<void> {
-  const uri = process.env.MONGODB_URI;
+  let uri = process.env.MONGODB_URI;
   if (uri && (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))) {
     try {
-      console.log('[Database] Establishing MongoDB connection via Mongoose...');
+      // Ensure specific database name is used if user passed default root URI
+      if (uri.includes('.mongodb.net/?') || uri.endsWith('.mongodb.net/')) {
+        uri = uri.replace('.mongodb.net/?', '.mongodb.net/govbudget?').replace('.mongodb.net/', '.mongodb.net/govbudget');
+      }
+
+      console.log('[Database] Establishing MongoDB Atlas connection via Mongoose...');
       await mongoose.connect(uri, {
-        serverSelectionTimeoutMS: 5000
+        serverSelectionTimeoutMS: 8000
       });
       dbStatus.isAtlasConnected = true;
       dbStatus.dbType = 'MongoDB Atlas';
-      console.log('[Database] Connected to MongoDB Atlas successfully.');
+      console.log(`[Database] Connected to MongoDB Atlas successfully [DB: ${mongoose.connection.name}]. Database ready.`);
       return;
     } catch (err: any) {
       console.warn('[Database] MongoDB Atlas connection failed, falling back to embedded store:', err.message);

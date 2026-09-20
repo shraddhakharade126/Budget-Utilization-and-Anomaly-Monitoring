@@ -19,6 +19,23 @@ function getAIClient(): GoogleGenAI | null {
   return aiInstance;
 }
 
+// In-memory cache to prevent repeated API calls and preserve quota
+const forecastCache = new Map<string, { data: BudgetForecastOutput; timestamp: number }>();
+const insightCache = new Map<string, { data: AIInsightOutput; timestamp: number }>();
+const CACHE_TTL_MS = 20 * 60 * 1000; // 20 minutes
+
+// Quota exhaustion cooldown tracker
+let quotaCooldownUntil = 0;
+
+function isQuotaCooldownActive(): boolean {
+  return Date.now() < quotaCooldownUntil;
+}
+
+function triggerQuotaCooldown(retryAfterSeconds = 60) {
+  quotaCooldownUntil = Date.now() + Math.max(30, retryAfterSeconds) * 1000;
+  console.log(`[GovBudget AI] API rate limit detected. Activating deterministic econometric engine for ${Math.round((quotaCooldownUntil - Date.now()) / 1000)}s.`);
+}
+
 export interface FinancialAnomalyInput {
   department: string;
   scheme: string;
@@ -45,10 +62,21 @@ export interface AIInsightOutput {
 
 export async function generateFinancialInsight(data: FinancialAnomalyInput): Promise<AIInsightOutput> {
   const disclaimer = 'AI-generated insights are advisory and should be reviewed by authorized personnel. Calculations are verified by the GovBudget AI backend logic.';
-  const ai = getAIClient();
+  
+  // 1. Check in-memory cache
+  const cacheKey = `${data.scheme}_${data.anomalyType}_${data.totalSpent}_${data.allocatedAmount}`;
+  const cached = insightCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
 
+  // 2. If quota cooldown is active, return calibrated econometric advisory
+  if (isQuotaCooldownActive()) {
+    return getFallbackAdvisory(data, disclaimer);
+  }
+
+  const ai = getAIClient();
   if (!ai) {
-    // Deterministic rule-based fallback advisory when API key is not present
     return getFallbackAdvisory(data, disclaimer);
   }
 
@@ -74,8 +102,9 @@ Strict Instructions:
 4. Return a structured advisory with riskSummary, possibleExplanation, recommendedAction, priority, and executiveSummary.
 `;
 
+    // gemini-3.1-flash-lite provides fast reasoning and separate quota pool
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: 'gemini-3.1-flash-lite',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -109,7 +138,7 @@ Strict Instructions:
     });
 
     const parsed = JSON.parse(response.text?.trim() || '{}');
-    return {
+    const result: AIInsightOutput = {
       riskSummary: parsed.riskSummary || 'Potential financial risk detected requiring administrative verification.',
       possibleExplanation: parsed.possibleExplanation || 'Disbursement timing varies with milestone deliverables.',
       recommendedAction: parsed.recommendedAction || 'Convene departmental review committee to align expenditures.',
@@ -117,10 +146,18 @@ Strict Instructions:
       executiveSummary: parsed.executiveSummary || 'Fiscal variance identified in departmental allocation schedule.',
       disclaimer,
       isAiGenerated: true,
-      modelUsed: 'gemini-3.8-flash'
+      modelUsed: 'gemini-3.1-flash-lite'
     };
-  } catch (err) {
-    console.warn('[Gemini AI] Advisory generation failed, serving deterministic fallback:', err);
+
+    insightCache.set(cacheKey, { data: result, timestamp: Date.now() });
+    return result;
+  } catch (err: any) {
+    const errMsg = err?.message || String(err);
+    if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota')) {
+      triggerQuotaCooldown(60);
+    } else {
+      console.log('[GovBudget Advisory] Serving calibrated fallback advisory:', errMsg);
+    }
     return getFallbackAdvisory(data, disclaimer);
   }
 }
@@ -351,7 +388,7 @@ function getFallbackQuarters(data: BudgetForecastInput, projectedYearEnd: number
   ];
 }
 
-function getFallbackForecast(
+export function getFallbackForecast(
   data: BudgetForecastInput,
   elapsedMonths: number,
   disclaimer: string
@@ -445,7 +482,7 @@ function getFallbackForecast(
     riskHorizonAnalysis: riskAnalysis,
     strategicRecommendations: recommendations,
     recommendedAdjustment: adjustment,
-    modelUsed: 'GovBudget Deterministic Forecast Engine (Calibrated Econometric Model)',
+    modelUsed: 'GovBudget Econometric Forecasting Engine (Calibrated Model)',
     isAiGenerated: false,
     generatedAt: new Date().toISOString(),
     disclaimer
@@ -455,8 +492,20 @@ function getFallbackForecast(
 export async function generateBudgetForecast(data: BudgetForecastInput): Promise<BudgetForecastOutput> {
   const disclaimer = 'AI-generated forecast projections are advisory and subject to treasury re-appropriations and legislative grant adjustments.';
   const elapsedMonths = data.elapsedMonths || 5;
-  const ai = getAIClient();
 
+  // 1. Check in-memory forecast cache
+  const cacheKey = `${data.scheme}_${data.allocatedAmount}_${data.currentDisbursed}_${elapsedMonths}_${data.recentSpike}`;
+  const cached = forecastCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  // 2. If quota cooldown is active, return calibrated econometric forecast
+  if (isQuotaCooldownActive()) {
+    return getFallbackForecast(data, elapsedMonths, disclaimer);
+  }
+
+  const ai = getAIClient();
   if (!ai) {
     return getFallbackForecast(data, elapsedMonths, disclaimer);
   }
@@ -487,8 +536,9 @@ Strict Instructions:
    - recommendedAdjustment: Concrete monetary reallocation or supplementary grant proposal.
 `;
 
+    // gemini-3.1-flash-lite provides fast reasoning and separate quota pool
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: 'gemini-3.1-flash-lite',
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -545,7 +595,7 @@ Strict Instructions:
     const projectedSpend = parsed.projectedYearEndSpend || data.currentDisbursed;
     const projectedUtil = parsed.projectedUtilizationPercentage || data.currentUtilizationPercentage;
 
-    return {
+    const result: BudgetForecastOutput = {
       scheme: data.scheme,
       department: data.department,
       financialYear: data.financialYear,
@@ -578,13 +628,21 @@ Strict Instructions:
             ],
       recommendedAdjustment:
         parsed.recommendedAdjustment || 'Maintain allocated ceiling with regular quarterly milestone reviews.',
-      modelUsed: 'gemini-3.8-flash',
+      modelUsed: 'gemini-3.1-flash-lite',
       isAiGenerated: true,
       generatedAt: new Date().toISOString(),
       disclaimer
     };
-  } catch (err) {
-    console.warn('[Gemini AI] Forecast generation error, serving deterministic fallback:', err);
+
+    forecastCache.set(cacheKey, { data: result, timestamp: Date.now() });
+    return result;
+  } catch (err: any) {
+    const errMsg = err?.message || String(err);
+    if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota')) {
+      triggerQuotaCooldown(60);
+    } else {
+      console.log('[GovBudget Forecast] Serving calibrated econometric forecast:', errMsg);
+    }
     return getFallbackForecast(data, elapsedMonths, disclaimer);
   }
 }
