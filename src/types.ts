@@ -189,3 +189,47 @@ export interface DataSourceItem {
   sourceUrl: string;
   description: string;
 }
+
+export interface MonthlySpendingTrend {
+  month: string;
+  amount: number;
+  currentFY: number;
+  previousFY: number;
+  cumulativeCurrentFY: number;
+  cumulativePreviousFY: number;
+  targetBenchmark: number;
+  monthlyBenchmark: number;
+  yoyGrowthPct: number;
+  variance: number;
+  quarter: string;
+}
+
+export interface DepartmentYoY {
+  departmentId: string;
+  name: string;
+  code: string;
+  allocated: number;
+  currentFY: number;
+  previousFY: number;
+  variance: number;
+  growthPercentage: number;
+  utilization: number;
+}
+
+export interface SpendingAnalyticsSummary {
+  currentTotal: number;
+  previousTotal: number;
+  growthPercentage: number;
+  totalAllocated: number;
+  remainingBudget: number;
+  averageMonthlyBurnRate: number;
+}
+
+export interface MonthlyAnalyticsResponse {
+  success: boolean;
+  financialYearCurrent?: string;
+  financialYearPrevious?: string;
+  monthly: MonthlySpendingTrend[];
+  departmentYoY?: DepartmentYoY[];
+  summary?: SpendingAnalyticsSummary;
+}

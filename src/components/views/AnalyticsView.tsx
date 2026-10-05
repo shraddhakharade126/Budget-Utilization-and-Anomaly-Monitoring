@@ -4,6 +4,7 @@ import { Department, Budget, Expenditure, Alert } from '../../types';
 import { formatCroreLakh, formatDate } from '../../utils/formatters';
 import { jsPDF } from 'jspdf';
 import { exportConsolidatedForecastsPDF } from '../../utils/pdfForecastExport';
+import { exportDepartmentUtilizationPDF } from '../../utils/pdfDepartmentUtilization';
 import {
   BarChart3,
   Download,
@@ -15,7 +16,8 @@ import {
   CheckCircle2,
   Calendar,
   Printer,
-  Sparkles
+  Sparkles,
+  FileDown
 } from 'lucide-react';
 
 export const AnalyticsView: React.FC = () => {
@@ -26,6 +28,7 @@ export const AnalyticsView: React.FC = () => {
   const [expenditures, setExpenditures] = useState<Expenditure[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExportingAIPDF, setIsExportingAIPDF] = useState(false);
+  const [isExportingDeptPDF, setIsExportingDeptPDF] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -230,6 +233,34 @@ export const AnalyticsView: React.FC = () => {
     }
   };
 
+  const exportDeptUtilizationSummaryPDF = () => {
+    if (departments.length === 0) return;
+    try {
+      setIsExportingDeptPDF(true);
+      const totalAllocated = budgets.reduce((s, b) => s + b.allocatedAmount, 0);
+      const totalSpent = expenditures.reduce((s, e) => s + e.amount, 0);
+      const remainingBudget = totalAllocated - totalSpent;
+      const overallUtilization = totalAllocated > 0 ? (totalSpent / totalAllocated) * 100 : 0;
+
+      exportDepartmentUtilizationPDF({
+        departments,
+        financialYear: '2025-26',
+        budgets,
+        overview: {
+          totalAllocated,
+          totalExpenditure: totalSpent,
+          remainingBudget,
+          overallUtilization,
+          totalDepartments: departments.length
+        }
+      });
+    } catch (err) {
+      console.error('Failed to export department utilization PDF:', err);
+    } finally {
+      setIsExportingDeptPDF(false);
+    }
+  };
+
   const maxDeptAlloc = Math.max(...(departments.map((d) => d.allocated) || [1]), 1);
 
   return (
@@ -268,6 +299,15 @@ export const AnalyticsView: React.FC = () => {
             <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-400" /> Export Vouchers CSV
           </button>
           <button
+            onClick={exportDeptUtilizationSummaryPDF}
+            disabled={isExportingDeptPDF || departments.length === 0}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-600 disabled:opacity-50 text-white text-xs font-semibold shadow-sm transition"
+            title="Download official PDF summary of department-wise budget utilization"
+          >
+            <FileDown className="w-3.5 h-3.5 text-teal-200" />
+            {isExportingDeptPDF ? 'Generating...' : 'Dept Utilization PDF'}
+          </button>
+          <button
             onClick={exportPDFReport}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-sm transition"
           >
@@ -289,13 +329,24 @@ export const AnalyticsView: React.FC = () => {
                 Visualizing fiscal headroom across ministerial portfolios
               </p>
             </div>
-            <div className="flex items-center gap-3 text-[11px]">
-              <span className="flex items-center gap-1 text-slate-400">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-700"></span> Allocated
-              </span>
-              <span className="flex items-center gap-1 text-slate-400">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Disbursed
-              </span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={exportDeptUtilizationSummaryPDF}
+                disabled={isExportingDeptPDF || departments.length === 0}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-teal-950/70 hover:bg-teal-900 text-teal-300 border border-teal-800 text-[11px] font-medium transition shadow-sm disabled:opacity-50"
+                title="Download Department-Wise Budget Utilization Summary PDF"
+              >
+                <FileDown className="w-3 h-3 text-teal-400" />
+                {isExportingDeptPDF ? 'Generating...' : 'Download PDF Summary'}
+              </button>
+              <div className="hidden sm:flex items-center gap-3 text-[11px]">
+                <span className="flex items-center gap-1 text-slate-400">
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-700"></span> Allocated
+                </span>
+                <span className="flex items-center gap-1 text-slate-400">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Disbursed
+                </span>
+              </div>
             </div>
           </div>
 

@@ -9,7 +9,8 @@ import {
   AIInsight,
   BudgetForecastOutput,
   ConsolidatedForecastSummary,
-  DataSourceItem
+  DataSourceItem,
+  MonthlyAnalyticsResponse
 } from './types';
 
 const TOKEN_KEY = 'govbudget_token';
@@ -150,7 +151,7 @@ export const api = {
     }>('/api/analytics/departments'),
 
   getMonthlyAnalytics: () =>
-    request<{ success: boolean; monthly: { month: string; amount: number }[] }>('/api/analytics/monthly'),
+    request<MonthlyAnalyticsResponse>('/api/analytics/monthly'),
 
   getAlertAnalytics: () =>
     request<{

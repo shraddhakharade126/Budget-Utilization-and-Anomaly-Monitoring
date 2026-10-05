@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../api';
-import { User, Alert } from '../../types';
+import { User, Alert, MonthlySpendingTrend, DepartmentYoY, SpendingAnalyticsSummary } from '../../types';
 import { formatCroreLakh, formatDate } from '../../utils/formatters';
+import { BudgetTrendsChart } from '../charts/BudgetTrendsChart';
+import { exportDepartmentUtilizationPDF } from '../../utils/pdfDepartmentUtilization';
 import {
   TrendingUp,
   AlertTriangle,
@@ -16,7 +18,8 @@ import {
   Scan,
   CreditCard,
   Activity,
-  BookOpen
+  BookOpen,
+  FileDown
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -53,8 +56,36 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [overview, setOverview] = useState<any>(null);
   const [departments, setDepartments] = useState<any[]>([]);
   const [monthly, setMonthly] = useState<any[]>([]);
+  const [monthlyTrends, setMonthlyTrends] = useState<MonthlySpendingTrend[]>([]);
+  const [departmentYoY, setDepartmentYoY] = useState<DepartmentYoY[]>([]);
+  const [spendingSummary, setSpendingSummary] = useState<SpendingAnalyticsSummary | undefined>(undefined);
+  const [financialYearCurrent, setFinancialYearCurrent] = useState<string>('FY 2025–26');
+  const [financialYearPrevious, setFinancialYearPrevious] = useState<string>('FY 2024–25');
   const [recentAlerts, setRecentAlerts] = useState<Alert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExportingDeptPDF, setIsExportingDeptPDF] = useState(false);
+
+  const handleDownloadDepartmentPDF = () => {
+    if (departments.length === 0) return;
+    setIsExportingDeptPDF(true);
+    try {
+      exportDepartmentUtilizationPDF({
+        departments,
+        financialYear: financialYearCurrent.replace(/[^0-9–-]/g, '') || '2025-26',
+        overview: {
+          totalAllocated: overview?.totalAllocated,
+          totalExpenditure: overview?.totalExpenditure,
+          remainingBudget: overview?.remainingBudget,
+          overallUtilization: overview?.overallUtilization,
+          totalDepartments: overview?.totalDepartments
+        }
+      });
+    } catch (err) {
+      console.error('Failed to generate department utilization PDF:', err);
+    } finally {
+      setIsExportingDeptPDF(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -68,7 +99,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
       if (overRes.success) setOverview(overRes.data);
       if (deptRes.success) setDepartments(deptRes.departments);
-      if (monthRes.success) setMonthly(monthRes.monthly);
+      if (monthRes.success) {
+        setMonthly(monthRes.monthly);
+        setMonthlyTrends(monthRes.monthly);
+        if (monthRes.departmentYoY) setDepartmentYoY(monthRes.departmentYoY);
+        if (monthRes.summary) setSpendingSummary(monthRes.summary);
+        if (monthRes.financialYearCurrent) setFinancialYearCurrent(monthRes.financialYearCurrent);
+        if (monthRes.financialYearPrevious) setFinancialYearPrevious(monthRes.financialYearPrevious);
+      }
       if (alertRes.success) setRecentAlerts(alertRes.alerts.slice(0, 4));
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
@@ -91,8 +129,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       </div>
     );
   }
-
-  const maxMonth = Math.max(...(monthly.map((m) => m.amount) || [1]), 1);
 
   return (
     <div className="space-y-6">
@@ -122,6 +158,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
           >
             <Scan className="w-3.5 h-3.5 text-amber-400" /> Run Anomaly Scan
+          </button>
+
+          <button
+            onClick={handleDownloadDepartmentPDF}
+            disabled={isExportingDeptPDF || departments.length === 0}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-900/60 hover:bg-teal-800 text-teal-200 border border-teal-700/70 transition shadow-sm disabled:opacity-50"
+            title="Download Official Department-Wise Budget Utilization Summary PDF"
+          >
+            <FileDown className="w-3.5 h-3.5 text-teal-300" />
+            {isExportingDeptPDF ? 'Generating...' : 'Dept Utilization PDF'}
           </button>
 
           <button
@@ -446,40 +492,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Monthly Expenditure Velocity Bar Chart */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-sm font-bold text-white tracking-tight">
-              Monthly Fiscal Expenditure Velocity (FY 2025–26)
-            </h3>
-            <p className="text-[11px] text-slate-400">
-              Voucher disbursements across all departments in INR
-            </p>
-          </div>
-          <span className="text-[11px] text-slate-400 font-mono">Quarterly Cycles</span>
-        </div>
-
-        <div className="h-44 flex items-end gap-2 pt-6">
-          {monthly.map((m) => {
-            const heightPercent = maxMonth > 0 ? Math.max((m.amount / maxMonth) * 100, 6) : 6;
-            return (
-              <div key={m.month} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity text-[9px] font-mono text-slate-300 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700 whitespace-nowrap -mb-1 z-10">
-                  {formatCroreLakh(m.amount)}
-                </div>
-                <div
-                  className="w-full rounded-t transition-all duration-300 bg-gradient-to-t from-blue-700 to-indigo-500 group-hover:from-blue-500 group-hover:to-cyan-400"
-                  style={{ height: `${heightPercent}%` }}
-                ></div>
-                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
-                  {m.month}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {/* Real-Time Budget Spending Trends & Year-over-Year (YoY) Recharts Visualizer */}
+      <BudgetTrendsChart
+        monthlyData={monthlyTrends.length > 0 ? monthlyTrends : (monthly as any)}
+        departmentYoY={departmentYoY}
+        summary={spendingSummary}
+        financialYearCurrent={financialYearCurrent}
+        financialYearPrevious={financialYearPrevious}
+        isLoading={isLoading}
+      />
 
       {/* Department Breakdown Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
@@ -492,12 +513,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               Scrutiny of Demand for Grants &amp; Disbursed Balances
             </p>
           </div>
-          <button
-            onClick={() => handleNav('budgets')}
-            className="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1"
-          >
-            Manage Schemes <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownloadDepartmentPDF}
+              disabled={isExportingDeptPDF || departments.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-900/50 hover:bg-teal-800 text-teal-200 border border-teal-700/60 transition shadow-sm disabled:opacity-50"
+              title="Generate and download official PDF summary of department-wise budget utilization"
+            >
+              <FileDown className="w-3.5 h-3.5 text-teal-300" />
+              {isExportingDeptPDF ? 'Generating...' : 'Download PDF Summary'}
+            </button>
+            <button
+              onClick={() => handleNav('budgets')}
+              className="text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1"
+            >
+              Manage Schemes <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">

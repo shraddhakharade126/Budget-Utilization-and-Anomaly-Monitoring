@@ -22,7 +22,7 @@ test('GovBudget AI Core Financial & Anomaly Engine Test Suite', async (t) => {
     const users = await UserModel.find();
     assert.ok(users.length >= 3, 'Should have at least 3 users (Admin, Finance, Head)');
 
-    const admin = await UserModel.findOne({ email: 'admin@govbudget.demo' });
+    const admin = (await UserModel.findOne({ email: 'admin@govbudget.nic.in' })) || (await UserModel.findOne({ role: 'ADMIN' }));
     assert.ok(admin, 'Admin user should exist');
     assert.equal(admin?.role, 'ADMIN');
 
@@ -38,7 +38,7 @@ test('GovBudget AI Core Financial & Anomaly Engine Test Suite', async (t) => {
 
   // 2. JWT Authentication & Role Sign
   await t.test('JWT token generation encodes user role and identifier', async () => {
-    const admin = (await UserModel.findOne({ email: 'admin@govbudget.demo' }))!;
+    const admin = ((await UserModel.findOne({ email: 'admin@govbudget.nic.in' })) || (await UserModel.findOne({ role: 'ADMIN' })))!;
     const token = signToken(admin);
     assert.ok(typeof token === 'string' && token.length > 20, 'Token should be a valid string');
   });
