@@ -12,7 +12,7 @@ import apiRouter from './server/routes/api.js';
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   // Middlewares & Permissive CORS for Angular frontend and API clients
   app.use(
